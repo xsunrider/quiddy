@@ -1,119 +1,45 @@
-<!DOCTYPE html>
+# Re-create and zip the final Firebase-integrated chat project due to code execution environment reset.
+
+from zipfile import ZipFile
+import os
+
+# Define the output directory again
+base_dir = "/mnt/data/final_firebase_chat_site"
+os.makedirs(base_dir, exist_ok=True)
+
+# Define file contents
+index_html = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Custom Chat Page</title>
-  <style>
-    body {
-      margin: 0;
-      display: flex;
-      height: 100vh;
-      font-family: sans-serif;
-    }
-    .section {
-      border: 1px solid black;
-      padding: 10px;
-      overflow-y: auto;
-    }
-    #leftPanel {
-      width: 250px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-    #imageRow img {
-      width: 50px;
-      height: 50px;
-      margin: 0 5px;
-    }
-    #scoreboard {
-      font-size: 20px;
-      margin: 10px 0;
-    }
-    #controlPanel {
-      display: none;
-      width: 100%;
-    }
-    .input-row {
-      margin: 5px 0;
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-    }
-    #sectionB, #sectionC {
-      flex: 1;
-    }
-    #sectionC {
-      border-left: 1px solid black;
-    }
-    #banner {
-      background: #ffd;
-      padding: 5px;
-      margin-bottom: 5px;
-      border: 1px solid #aaa;
-    }
-    .chat {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-    }
-    .chat-input {
-      display: flex;
-      margin-top: 5px;
-    }
-    .chat-input input {
-      flex: 1;
-    }
-    #passwordPanel {
-      display: flex;
-      gap: 5px;
-      width: 100%;
-    }
-    #accessList {
-      width: 100%;
-      text-align: left;
-    }
-  </style>
+  <title>Custom Firebase Chat Site</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="firebase-config.js"></script>
 </head>
 <body>
-  <!-- LEFT PANEL (Images + Scoreboard + Hidden Panel) -->
   <div id="leftPanel" class="section">
     <div id="imageRow">
       <img src="image1.png" alt="img1" />
       <img src="image2.png" alt="img2" />
     </div>
     <div id="scoreboard">0 - 0</div>
-
-    <!-- Password Section -->
     <div id="passwordPanel">
       <input type="password" id="passwordInput" placeholder="Password..." />
       <button onclick="checkPassword()">Unlock</button>
     </div>
-
-    <!-- Hidden Panel -->
-    <div id="controlPanel">
-      <div class="input-row">
-        <input type="text" id="bannerInput" placeholder="Banner text" />
-      </div>
-      <div class="input-row">
-        <input type="number" id="leftScore" placeholder="Left score" />
-        <button onclick="addScore('left')">Add</button>
-      </div>
-      <div class="input-row">
-        <input type="number" id="rightScore" placeholder="Right score" />
-        <button onclick="addScore('right')">Add</button>
-      </div>
+    <div id="controlPanel" style="display:none;">
+      <input type="text" id="bannerInput" placeholder="Banner text" />
+      <input type="number" id="leftScore" placeholder="Left score" />
+      <button onclick="addScore('left')">Add</button>
+      <input type="number" id="rightScore" placeholder="Right score" />
+      <button onclick="addScore('right')">Add</button>
       <div id="accessList"><strong>Allow to private chat:</strong></div>
     </div>
   </div>
 
-  <!-- PRIVATE CHAT -->
   <div id="sectionB" class="section chat">
     <div id="banner" style="display:none;"></div>
     <div id="privateMessages" class="messages"></div>
@@ -123,7 +49,6 @@
     </div>
   </div>
 
-  <!-- PUBLIC CHAT -->
   <div id="sectionC" class="section chat">
     <div class="chat-input" id="usernamePanel">
       <input type="text" id="usernameInput" placeholder="Username..." />
@@ -136,107 +61,178 @@
     </div>
   </div>
 
-  <script>
-    let totalLeft = 0;
-    let totalRight = 0;
-    let currentUsername = "";
-
-    function checkPassword() {
-      const input = document.getElementById("passwordInput").value;
-      if (input === "sunquiddy") {
-        document.getElementById("controlPanel").style.display = "block";
-        document.getElementById("passwordPanel").style.display = "none";
-      } else {
-        alert("Wrong password!");
-      }
-    }
-
-    function addScore(side) {
-      const inputId = side === "left" ? "leftScore" : "rightScore";
-      const value = parseInt(document.getElementById(inputId).value) || 0;
-      if (side === "left") totalLeft += value;
-      else totalRight += value;
-      document.getElementById("scoreboard").textContent = `${totalLeft} - ${totalRight}`;
-    }
-
-    function setUsername() {
-      const input = document.getElementById("usernameInput").value.trim();
-      if (!input) return alert("Username cannot be empty.");
-      currentUsername = input;
-      document.getElementById("usernamePanel").style.display = "none";
-      createAccessCheckbox(input);
-    }
-
-    function createAccessCheckbox(username) {
-      const container = document.getElementById("accessList");
-      const div = document.createElement("div");
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.id = `access-${username}`;
-      cb.checked = false;
-      div.appendChild(cb);
-      const label = document.createElement("label");
-      label.htmlFor = cb.id;
-      label.textContent = " " + username;
-      div.appendChild(label);
-      container.appendChild(div);
-    }
-
-    function sendMessage(type) {
-      const msgBox = document.getElementById(type + "Input");
-      const text = msgBox.value.trim();
-      if (!text) return;
-
-      if (type === "private") {
-        if (!currentUsername || !document.getElementById(`access-${currentUsername}`)?.checked) {
-          alert("You're not allowed to post in the private chat.");
-          return;
-        }
-        if (text.startsWith("!banner ")) {
-          const bannerText = text.replace("!banner ", "");
-          const banner = document.getElementById("banner");
-          banner.textContent = bannerText;
-          banner.style.display = "block";
-          msgBox.value = "";
-          return;
-        }
-      }
-
-      let message = text;
-      if (type === "public" || type === "private") {
-        message = `${currentUsername}: ${text}`;
-      }
-
-      const container = document.getElementById(type + "Messages");
-      const el = document.createElement("div");
-      el.textContent = message;
-      container.appendChild(el);
-
-      saveMessage(type, message);
-      msgBox.value = "";
-    }
-
-    function saveMessage(type, message) {
-      const key = type + "Chat";
-      let messages = JSON.parse(localStorage.getItem(key)) || [];
-      messages.push(message);
-      localStorage.setItem(key, JSON.stringify(messages));
-    }
-
-    function loadMessages() {
-      ["private", "public"].forEach(type => {
-        const key = type + "Chat";
-        const container = document.getElementById(type + "Messages");
-        const saved = JSON.parse(localStorage.getItem(key)) || [];
-        saved.forEach(msg => {
-          const el = document.createElement("div");
-          el.textContent = msg;
-          container.appendChild(el);
-        });
-      });
-    }
-
-    loadMessages();
-  </script>
+  <script src="main.js"></script>
 </body>
 </html>
+"""
+
+style_css = """
+body {
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  font-family: sans-serif;
+}
+.section {
+  border: 1px solid black;
+  padding: 10px;
+  overflow-y: auto;
+}
+#leftPanel {
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+#imageRow img {
+  width: 50px;
+  margin-right: 5px;
+}
+#scoreboard {
+  font-size: 20px;
+  margin: 10px 0;
+}
+#passwordPanel {
+  display: flex;
+  gap: 5px;
+}
+#controlPanel {
+  display: none;
+}
+.messages {
+  height: 80%;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+.chat-input {
+  display: flex;
+  gap: 5px;
+}
+.chat-input input {
+  flex: 1;
+}
+"""
+
+firebase_config_js = """// Replace this with your Firebase project configuration
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+"""
+
+main_js = """
+let totalLeft = 0;
+let totalRight = 0;
+let currentUsername = "";
+
+function checkPassword() {
+  const input = document.getElementById("passwordInput").value;
+  if (input === "sunquiddy") {
+    document.getElementById("controlPanel").style.display = "block";
+    document.getElementById("passwordPanel").style.display = "none";
+  } else {
+    alert("Wrong password!");
+  }
+}
+
+function addScore(side) {
+  const inputId = side === "left" ? "leftScore" : "rightScore";
+  const value = parseInt(document.getElementById(inputId).value) || 0;
+  if (side === "left") totalLeft += value;
+  else totalRight += value;
+  document.getElementById("scoreboard").textContent = totalLeft + " - " + totalRight;
+}
+
+function setUsername() {
+  const input = document.getElementById("usernameInput").value.trim();
+  if (!input) return alert("Username cannot be empty.");
+  currentUsername = input;
+  document.getElementById("usernamePanel").style.display = "none";
+  createAccessCheckbox(input);
+}
+
+function createAccessCheckbox(username) {
+  const container = document.getElementById("accessList");
+  const div = document.createElement("div");
+  const cb = document.createElement("input");
+  cb.type = "checkbox";
+  cb.id = "access-" + username;
+  cb.checked = false;
+  div.appendChild(cb);
+  const label = document.createElement("label");
+  label.htmlFor = cb.id;
+  label.textContent = " " + username;
+  div.appendChild(label);
+  container.appendChild(div);
+}
+
+function sendMessage(type) {
+  const msgBox = document.getElementById(type + "Input");
+  const text = msgBox.value.trim();
+  if (!text) return;
+
+  if (type === "private") {
+    if (!currentUsername || !document.getElementById("access-" + currentUsername)?.checked) {
+      alert("You're not allowed to post in the private chat.");
+      return;
+    }
+    if (text.startsWith("!banner ")) {
+      const bannerText = text.replace("!banner ", "");
+      document.getElementById("banner").textContent = bannerText;
+      document.getElementById("banner").style.display = "block";
+      msgBox.value = "";
+      return;
+    }
+  }
+
+  const message = currentUsername + ": " + text;
+  db.ref(type + "Chat").push().set({ message });
+  msgBox.value = "";
+}
+
+function loadMessages() {
+  ["private", "public"].forEach(type => {
+    const ref = db.ref(type + "Chat");
+    ref.on("child_added", snapshot => {
+      const data = snapshot.val();
+      const el = document.createElement("div");
+      el.textContent = data.message;
+      document.getElementById(type + "Messages").appendChild(el);
+    });
+  });
+}
+
+loadMessages();
+"""
+
+# Write all files to the directory
+with open(os.path.join(base_dir, "index.html"), "w") as f:
+    f.write(index_html)
+
+with open(os.path.join(base_dir, "style.css"), "w") as f:
+    f.write(style_css)
+
+with open(os.path.join(base_dir, "firebase-config.js"), "w") as f:
+    f.write(firebase_config_js)
+
+with open(os.path.join(base_dir, "main.js"), "w") as f:
+    f.write(main_js)
+
+# Create ZIP archive
+zip_path = "/mnt/data/final_firebase_chat_site.zip"
+with ZipFile(zip_path, "w") as zipf:
+    for filename in os.listdir(base_dir):
+        file_path = os.path.join(base_dir, filename)
+        zipf.write(file_path, arcname=filename)
+
+zip_path
