@@ -1,6 +1,172 @@
-git clone https://github.com/xsunrider/quiddy.git
-cd my-website
-# Add your files
-git add .
-git commit -m "Initial webpage"
-git push
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Custom Chat Page</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      font-family: sans-serif;
+    }
+    .section {
+      border: 1px solid black;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    #sectionA {
+      width: 200px;
+      display: none;
+      flex-direction: column;
+    }
+    #sectionB, #sectionC {
+      flex: 1;
+    }
+    #sectionC {
+      border-left: 1px solid black;
+    }
+    .input-row {
+      margin: 5px 0;
+    }
+    #passwordPanel {
+      padding: 10px;
+      border-top: 1px solid black;
+    }
+    #banner {
+      background: #ffd;
+      padding: 5px;
+      margin-bottom: 5px;
+      border: 1px solid #aaa;
+    }
+    .chat {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .chat-input {
+      display: flex;
+    }
+    .chat-input input {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Section A (Hidden Control Panel) -->
+  <div id="sectionA" class="section">
+    <div class="input-row">
+      <img src="image1.png" width="40">
+      <img src="image2.png" width="40">
+    </div>
+    <div class="input-row">
+      <div id="scoreboard">0 - 0</div>
+    </div>
+    <div class="input-row">
+      <input type="text" id="bannerInput" placeholder="Banner text">
+    </div>
+    <div class="input-row">
+      <input type="number" id="leftScore" placeholder="Left score">
+      <button onclick="updateScore()">4</button>
+    </div>
+    <div class="input-row">
+      <input type="number" id="rightScore" placeholder="Right score">
+      <button onclick="updateScore()">6</button>
+    </div>
+  </div>
+
+  <!-- Section B (Private Chat) -->
+  <div id="sectionB" class="section chat">
+    <div id="banner" style="display:none;"></div>
+    <div id="privateMessages" class="messages"></div>
+    <div class="chat-input">
+      <input type="text" id="privateInput" placeholder="Private chat..." />
+      <button onclick="sendMessage('private')">Send</button>
+    </div>
+  </div>
+
+  <!-- Section C (Public Chat) -->
+  <div id="sectionC" class="section chat">
+    <div id="publicMessages" class="messages"></div>
+    <div class="chat-input">
+      <input type="text" id="publicInput" placeholder="Public chat..." />
+      <button onclick="sendMessage('public')">Send</button>
+    </div>
+  </div>
+
+  <!-- Section D (Password Input) -->
+  <div id="passwordPanel">
+    <input type="password" id="passwordInput" placeholder="Enter password..." />
+    <button onclick="checkPassword()">Unlock Panel</button>
+  </div>
+
+  <script>
+    const bannerEl = document.getElementById("banner");
+
+    function checkPassword() {
+      const input = document.getElementById("passwordInput").value;
+      if (input === "sunquiddy") {
+        document.getElementById("sectionA").style.display = "flex";
+      } else {
+        alert("Wrong password!");
+      }
+    }
+
+    function updateScore() {
+      const left = parseInt(document.getElementById("leftScore").value) || 0;
+      const right = parseInt(document.getElementById("rightScore").value) || 0;
+      document.getElementById("scoreboard").textContent = `${left} - ${right}`;
+    }
+
+    function sendMessage(type) {
+      const inputId = type === "private" ? "privateInput" : "publicInput";
+      const msgBox = document.getElementById(inputId);
+      const text = msgBox.value.trim();
+      if (!text) return;
+
+      if (type === "private" && text.startsWith("!banner ")) {
+        const bannerText = text.replace("!banner ", "");
+        bannerEl.textContent = bannerText;
+        bannerEl.style.display = "block";
+        msgBox.value = "";
+        return;
+      }
+
+      const messageDiv = document.createElement("div");
+      messageDiv.textContent = text;
+
+      const container = type === "private" ? "privateMessages" : "publicMessages";
+      document.getElementById(container).appendChild(messageDiv);
+      saveMessage(type, text);
+      msgBox.value = "";
+    }
+
+    function saveMessage(type, text) {
+      const key = type + "Chat";
+      let messages = JSON.parse(localStorage.getItem(key)) || [];
+      messages.push(text);
+      localStorage.setItem(key, JSON.stringify(messages));
+    }
+
+    function loadMessages() {
+      ["private", "public"].forEach(type => {
+        const key = type + "Chat";
+        const container = document.getElementById(type + "Messages");
+        const saved = JSON.parse(localStorage.getItem(key)) || [];
+        saved.forEach(msg => {
+          const el = document.createElement("div");
+          el.textContent = msg;
+          container.appendChild(el);
+        });
+      });
+    }
+
+    loadMessages();
+  </script>
+</body>
+</html>
