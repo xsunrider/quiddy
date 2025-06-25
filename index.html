@@ -16,23 +16,37 @@
       padding: 10px;
       overflow-y: auto;
     }
-    #sectionA {
-      width: 200px;
-      display: none;
+    #leftPanel {
+      width: 250px;
+      display: flex;
       flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    #imageRow img {
+      width: 50px;
+      height: 50px;
+      margin: 0 5px;
+    }
+    #scoreboard {
+      font-size: 20px;
+      margin: 10px 0;
+    }
+    #controlPanel {
+      display: none;
+      width: 100%;
+    }
+    .input-row {
+      margin: 5px 0;
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
     }
     #sectionB, #sectionC {
       flex: 1;
     }
     #sectionC {
       border-left: 1px solid black;
-    }
-    .input-row {
-      margin: 5px 0;
-    }
-    #passwordPanel {
-      padding: 10px;
-      border-top: 1px solid black;
     }
     #banner {
       background: #ffd;
@@ -51,36 +65,50 @@
     }
     .chat-input {
       display: flex;
+      margin-top: 5px;
     }
     .chat-input input {
       flex: 1;
     }
+    #passwordPanel {
+      display: flex;
+      gap: 5px;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
-  <!-- Section A (Hidden Control Panel) -->
-  <div id="sectionA" class="section">
-    <div class="input-row">
-      <img src="image1.png" width="40">
-      <img src="image2.png" width="40">
+  <!-- LEFT PANEL (Images + Scoreboard + Hidden Panel) -->
+  <div id="leftPanel" class="section">
+    <div id="imageRow">
+      <img src="image1.png" alt="img1" />
+      <img src="image2.png" alt="img2" />
     </div>
-    <div class="input-row">
-      <div id="scoreboard">0 - 0</div>
+    <div id="scoreboard">0 - 0</div>
+
+    <!-- Password Section -->
+    <div id="passwordPanel">
+      <input type="password" id="passwordInput" placeholder="Password..." />
+      <button onclick="checkPassword()">Unlock</button>
     </div>
-    <div class="input-row">
-      <input type="text" id="bannerInput" placeholder="Banner text">
-    </div>
-    <div class="input-row">
-      <input type="number" id="leftScore" placeholder="Left score">
-      <button onclick="updateScore()">4</button>
-    </div>
-    <div class="input-row">
-      <input type="number" id="rightScore" placeholder="Right score">
-      <button onclick="updateScore()">6</button>
+
+    <!-- Hidden Panel -->
+    <div id="controlPanel">
+      <div class="input-row">
+        <input type="text" id="bannerInput" placeholder="Banner text" />
+      </div>
+      <div class="input-row">
+        <input type="number" id="leftScore" placeholder="Left score" />
+        <button onclick="updateScore()">4</button>
+      </div>
+      <div class="input-row">
+        <input type="number" id="rightScore" placeholder="Right score" />
+        <button onclick="updateScore()">6</button>
+      </div>
     </div>
   </div>
 
-  <!-- Section B (Private Chat) -->
+  <!-- PRIVATE CHAT -->
   <div id="sectionB" class="section chat">
     <div id="banner" style="display:none;"></div>
     <div id="privateMessages" class="messages"></div>
@@ -90,8 +118,11 @@
     </div>
   </div>
 
-  <!-- Section C (Public Chat) -->
+  <!-- PUBLIC CHAT -->
   <div id="sectionC" class="section chat">
+    <div class="chat-input">
+      <input type="text" id="usernameInput" placeholder="Username..." />
+    </div>
     <div id="publicMessages" class="messages"></div>
     <div class="chat-input">
       <input type="text" id="publicInput" placeholder="Public chat..." />
@@ -99,19 +130,12 @@
     </div>
   </div>
 
-  <!-- Section D (Password Input) -->
-  <div id="passwordPanel">
-    <input type="password" id="passwordInput" placeholder="Enter password..." />
-    <button onclick="checkPassword()">Unlock Panel</button>
-  </div>
-
   <script>
-    const bannerEl = document.getElementById("banner");
-
     function checkPassword() {
       const input = document.getElementById("passwordInput").value;
       if (input === "sunquiddy") {
-        document.getElementById("sectionA").style.display = "flex";
+        document.getElementById("controlPanel").style.display = "block";
+        document.getElementById("passwordPanel").style.display = "none";
       } else {
         alert("Wrong password!");
       }
@@ -124,32 +148,42 @@
     }
 
     function sendMessage(type) {
-      const inputId = type === "private" ? "privateInput" : "publicInput";
-      const msgBox = document.getElementById(inputId);
+      const msgBox = document.getElementById(type + "Input");
       const text = msgBox.value.trim();
       if (!text) return;
 
+      let message = text;
       if (type === "private" && text.startsWith("!banner ")) {
         const bannerText = text.replace("!banner ", "");
-        bannerEl.textContent = bannerText;
-        bannerEl.style.display = "block";
+        const banner = document.getElementById("banner");
+        banner.textContent = bannerText;
+        banner.style.display = "block";
         msgBox.value = "";
         return;
       }
 
-      const messageDiv = document.createElement("div");
-      messageDiv.textContent = text;
+      if (type === "public") {
+        const username = document.getElementById("usernameInput").value.trim();
+        if (!username) {
+          alert("Please enter a username first.");
+          return;
+        }
+        message = `${username}: ${text}`;
+      }
 
-      const container = type === "private" ? "privateMessages" : "publicMessages";
-      document.getElementById(container).appendChild(messageDiv);
-      saveMessage(type, text);
+      const container = document.getElementById(type + "Messages");
+      const el = document.createElement("div");
+      el.textContent = message;
+      container.appendChild(el);
+
+      saveMessage(type, message);
       msgBox.value = "";
     }
 
-    function saveMessage(type, text) {
+    function saveMessage(type, message) {
       const key = type + "Chat";
       let messages = JSON.parse(localStorage.getItem(key)) || [];
-      messages.push(text);
+      messages.push(message);
       localStorage.setItem(key, JSON.stringify(messages));
     }
 
