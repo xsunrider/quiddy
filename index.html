@@ -75,6 +75,10 @@
       gap: 5px;
       width: 100%;
     }
+    #accessList {
+      width: 100%;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -99,12 +103,13 @@
       </div>
       <div class="input-row">
         <input type="number" id="leftScore" placeholder="Left score" />
-        <button onclick="updateScore()">4</button>
+        <button onclick="addScore('left')">Add</button>
       </div>
       <div class="input-row">
         <input type="number" id="rightScore" placeholder="Right score" />
-        <button onclick="updateScore()">6</button>
+        <button onclick="addScore('right')">Add</button>
       </div>
+      <div id="accessList"><strong>Allow to private chat:</strong></div>
     </div>
   </div>
 
@@ -120,8 +125,9 @@
 
   <!-- PUBLIC CHAT -->
   <div id="sectionC" class="section chat">
-    <div class="chat-input">
+    <div class="chat-input" id="usernamePanel">
       <input type="text" id="usernameInput" placeholder="Username..." />
+      <button onclick="setUsername()">Set</button>
     </div>
     <div id="publicMessages" class="messages"></div>
     <div class="chat-input">
@@ -131,6 +137,10 @@
   </div>
 
   <script>
+    let totalLeft = 0;
+    let totalRight = 0;
+    let currentUsername = "";
+
     function checkPassword() {
       const input = document.getElementById("passwordInput").value;
       if (input === "sunquiddy") {
@@ -141,10 +151,35 @@
       }
     }
 
-    function updateScore() {
-      const left = parseInt(document.getElementById("leftScore").value) || 0;
-      const right = parseInt(document.getElementById("rightScore").value) || 0;
-      document.getElementById("scoreboard").textContent = `${left} - ${right}`;
+    function addScore(side) {
+      const inputId = side === "left" ? "leftScore" : "rightScore";
+      const value = parseInt(document.getElementById(inputId).value) || 0;
+      if (side === "left") totalLeft += value;
+      else totalRight += value;
+      document.getElementById("scoreboard").textContent = `${totalLeft} - ${totalRight}`;
+    }
+
+    function setUsername() {
+      const input = document.getElementById("usernameInput").value.trim();
+      if (!input) return alert("Username cannot be empty.");
+      currentUsername = input;
+      document.getElementById("usernamePanel").style.display = "none";
+      createAccessCheckbox(input);
+    }
+
+    function createAccessCheckbox(username) {
+      const container = document.getElementById("accessList");
+      const div = document.createElement("div");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.id = `access-${username}`;
+      cb.checked = false;
+      div.appendChild(cb);
+      const label = document.createElement("label");
+      label.htmlFor = cb.id;
+      label.textContent = " " + username;
+      div.appendChild(label);
+      container.appendChild(div);
     }
 
     function sendMessage(type) {
@@ -152,23 +187,24 @@
       const text = msgBox.value.trim();
       if (!text) return;
 
-      let message = text;
-      if (type === "private" && text.startsWith("!banner ")) {
-        const bannerText = text.replace("!banner ", "");
-        const banner = document.getElementById("banner");
-        banner.textContent = bannerText;
-        banner.style.display = "block";
-        msgBox.value = "";
-        return;
-      }
-
-      if (type === "public") {
-        const username = document.getElementById("usernameInput").value.trim();
-        if (!username) {
-          alert("Please enter a username first.");
+      if (type === "private") {
+        if (!currentUsername || !document.getElementById(`access-${currentUsername}`)?.checked) {
+          alert("You're not allowed to post in the private chat.");
           return;
         }
-        message = `${username}: ${text}`;
+        if (text.startsWith("!banner ")) {
+          const bannerText = text.replace("!banner ", "");
+          const banner = document.getElementById("banner");
+          banner.textContent = bannerText;
+          banner.style.display = "block";
+          msgBox.value = "";
+          return;
+        }
+      }
+
+      let message = text;
+      if (type === "public" || type === "private") {
+        message = `${currentUsername}: ${text}`;
       }
 
       const container = document.getElementById(type + "Messages");
